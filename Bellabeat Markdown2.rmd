@@ -1,0 +1,352 @@
+---
+title: "Bellabeat Project"
+author: "Imber C"
+date: "2024-02-17"
+output:
+  html_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Bellabeat Capstone Project
+
+**Project Premise**:
+
+As part of Google Data Analytics course, I am doing a case study in the role of a junior analyst for Bellabeat, a company that manufactures health-focused products for women.
+
+Urška Sršen, cofounder and Chief Creative Officer of Bellabeat wants us to analyze smart product information from other brands so that we can discover growth opportunities.
+They want us to focus on one Bellabeat product and gain insight from the data we are analyzing to suggest and inform marketing strategies. Sršen wants us to analyze smart device user data and apply these insites to a Bellabeat product.
+
+These are the questions that will guide our analysis:
+
+  * 1. What are some trends in smart device usage?
+
+  * 2. How could these trends apply to Bellabeat customers?
+
+  * 3. How could these trends help influence Bellabeat marketing strategy?
+
+This is the information I have been given about the products Bellabeat currently offers:
+
+\--------------------------------------------------------
+ 
+  Bellabeat app: The Bellabeat app provides users with health data related to their activity, sleep, stress, menstrual cycle, and mindfulness habits. This data can help users better understand their current habits and make healthy decisions.The Bellabeat app connects to their line of smart wellness products.
+
+  Leaf: Bellabeat’s classic wellness tracker can be worn as a bracelet, necklace, or clip. The Leaf tracker connects to the Bellabeat app to track activity, sleep, and stress.
+
+  Time: This wellness watch combines the timeless look of a classic timepiece with smart technology to track user activity, sleep, and stress. The Time watch connects to the Bellabeat app to provide you with insights into your daily wellness.
+
+  Spring: This is a water bottle that tracks daily water intake using smart technology to ensure that you are appropriately hydrated throughout the day. The Spring bottle connects to the Bellabeat app to track your hydration levels.
+
+  Bellabeat membership: Bellabeat also offers a subscription-based membership program for users.
+Membership gives users 24/7 access to fully personalized guidance on nutrition, activity, sleep, health and beauty, and mindfulness based on their lifestyle and goals."
+\---------------------------------------------------------
+
+
+Breaking this down, we know Bellabeat has the ability to track:
+
+* **Activity**
+* **Sleep**
+* **Stress**
+* **Menstrual Cycle**
+* **Mindfulness Habits**
+* **Hydration**
+
+We have been given a data set from Fitbit so we can compare what other apps/producst on the market are tracking:
+
+A variety of tables have been provided, including Heartrate per second,Calories, Intensities, Steps, and Sleep recorded at the minute level, Calories, intensities, steps, combined to the hourly level, and Activity, Calories, Steps, Sleep, and Intensities recorded at the day level, and a table of weights entered for some users throughout the time period.
+
+The data taken at the second or minute level will be too detailed for our analysis, but it is useful to know that this is the level of detail other apps are using, to be sure Bellabeat matches that level with our user interface.
+
+These datasets include
+
+* **Heartrate**
+* **Calories**
+* **Activity with intensities**
+* **Steps**
+* **Sleep**
+* **Weight**
+
+
+To start, we prepare our packages and our location where we have our data:
+I installed the following packages: tidyverse, here, skimr, janitor, ggplot2, and dplyr.
+```{r setup2, include=FALSE}
+
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+install.packages("tidyverse")
+install.packages("here")
+install.packages("skimr")
+install.packages("janitor")
+install.packages("ggplot2")
+install.packages("dplyr")
+library(dplyr)
+library(tidyverse)
+library(here)
+library(skimr)
+library(janitor)
+library(ggplot2)
+
+setwd("C:/Users/imber/OneDrive/Desktop/Data Analytics courses/Capstone/Fitness")
+```
+
+
+Next I bring in all the tables and take a look at exactly what data is provided for us to work with.
+
+```{r setup3, include=FALSE}
+Dintensities<-read_csv(here("Fitness","dailyIntensities_merged.csv"))
+Dactivity<-read_csv(here("Fitness","dailyActivity_merged.csv"))
+Dcalories<-read_csv(here("Fitness","dailyCalories_merged.csv"))
+Dsteps<-read_csv(here("Fitness","dailySteps_merged.csv"))
+sleep<-read_csv(here("Fitness","sleepDay_merged.csv"))
+weight<-read_csv(here("Fitness","weightLogInfo_merged.csv"))
+Hintensities<-read_csv(here("Fitness","hourlyIntensities_merged.csv"))
+
+```
+
+
+```{r}
+head(Dactivity)
+head(Dintensities)
+head(Dsteps)
+head(Dcalories)
+head(weight)
+head(sleep)
+
+```
+Right away we can notice that data is seperated by user Id and date. The date columns are different formats and have different names. It would be a good idea to streamline date format and column names at this time. However, I did not do this upfront.
+
+Other interesting information:
+
+* Sleep measures time in bed and time asleep.
+
+* Weight shows fat% and BMI, and includes options to manually report- which means some measurements are not manually reported. This could be a huge area of potential growth for Bellabeat to add a scale to it's product line. Currently weight is not tracked by Bellabeat products at all.
+
+* Dsteps is a simple dataset of Id, ActivityDay, and StepTotal. Bellabeat doesn't currently track steps at all, which is definitely an oversight. It is one of the simplest activities to track for even the most casual users. The Steps dataset is contained within the Dactivities dataset but may be easier to use alone.
+
+* Calories is a simple table of ID, ActivityDay, and Calories. I thought this might be Calories in, since Calories also appears in the Dactivities but after laboriously combining the two dataframes, I discovered they were identical numbers. I should have sorted the data and taken a better look first- lesson learned!
+
+* Daily activity and intensities have four different levels of activity. We want to be sure we are able to break down user activity into at least as many detailed brackets.
+
+* Hourly intensities may prove useful to Bellabeat in encouraging users to work out during their normal active times.
+
+
+---------------------------------------------------------------------------------------
+## Sleep and Mindfulness
+I want to start with the sleep dataset.  I would like to graph the difference between time in bed and time asleep. The idea here is using Bellabeat mindfullness routines, users should be able to see a difference in the amount of time spent in bed, but not asleep.
+Let me start by seeing how complicated the graph would be if we tried to see all users:
+
+```{r}
+ggplot(sleep, aes(x = SleepDay, y = TotalMinutesAsleep, color = Id)) +
+  geom_line() +
+  labs(title = "Total Minutes Asleep Over Time",
+       x = "Date",
+       y = "Total Minutes Asleep",
+       color = "ID") +
+  theme_minimal()
+```
+
+Right away, this is overly complicated. An average over all Id's would be a simplified example. I also think minutes asleep should be converted to hours for ease of understanding.
+  
+So I want first to convert minutes into hours, then make sure my date is formated as a date, then calculate average sleep time for each SleepDay.
+```{r}
+sleep <- sleep %>%
+  mutate(SleepHours = TotalMinutesAsleep / 60) %>% 
+  mutate(BedHours=TotalTimeInBed/60)
+
+sleep$SleepDay<-as.Date(sleep$SleepDay, format ="%m/%d/%y")
+
+average_sleep <-sleep %>% 
+  mutate(SleepHours= (TotalMinutesAsleep / 60),
+         BedHours = (TotalTimeInBed / 60)) %>% 
+  group_by(SleepDay) %>%
+  summarise(avg_sleep_time=round(mean(SleepHours),digits=3),
+            avg_bed_time=round(mean(BedHours), digits=3)) 
+
+```
+
+Now we should be ready to make a visualization. We are getting an average of all users, but we can also expect it is a good approximation of a single users results:
+
+```{r}
+ggplot(average_sleep, aes(x=SleepDay))+
+  geom_area (aes (y=avg_bed_time), fill="blue", alpha = 0.5)+
+  geom_area (aes(y=avg_sleep_time),fill="green",alpha=0.5)
+```
+
+**Suggested use for this data:** This visual makes it very easy to see time spent in bed vs asleep. Since mindfullness is one of the things Bellabeat is trying to bring to our consumers, this will be nice to be able to track, hopefully showing restless time in bed decreasing after engaging with mindfullness routines.
+
+## Calories
+Now let's look at calories:
+
+Below is what I did to reformat and combine Calories from Dactivity and Dcalories, before I realized it was the same data:
+
+str(Dcalories)
+ActivityDay is a chr string here as well.
+
+Dcalories\$ActivityDay<-as.Date(Dcalories\$ActivityDay, format ="%m/%d/%y")
+Dactivity\$ActivityDate<-as.Date(Dactivity\$ActivityDate, format ="%m/%d/%y")
+
+I want to join by Date and Id, and find it is easier to rename both fields that contain dates.
+
+Dcalories<-rename(Dcalories, Date=ActivityDay)
+Dactivity<-rename(Dactivity, Date=ActivityDate)
+Dactivity<-rename(Dactivity, Calories_out=Calories)
+
+Calories_in_out<-Dcalories %>% 
+  left_join(select(Dactivity, Date, Id, Calories_out), by=c("Date", "Id"))
+  
+Only after doing all of this did I realize the Calorie data was identical. I should have sorted my data before comparing, but the top lines were different and I assumed we had calories in and calories out.  
+
+**Suggested use for this information:** While I was not able to compare calories in to calories out, this does point out a hole in the data that other companies are collecting, Calories in is an important part of health and fitness.  
+
+## Most active usage times
+
+Next, I would like to see what hours users are most active, using Hintensities.
+
+I first used this code to separate:
+
+str(Hintensities)
+Hintensities3 <- Hintensities %>%
+    separate(ActivityHour, into = c("date", "time"), sep= " ")
+
+```{r setup4, include=FALSE}
+str(Hintensities)
+Hintensities3 <- Hintensities %>%
+    separate(ActivityHour, into = c("date", "time"), sep= " ")
+```
+We lose AM/PM distinction with the above code, so I am going to change it to 24 hour time format.
+
+```{r}
+Hintensities24 <- Hintensities %>%
+  mutate(datetime = as.POSIXct(ActivityHour, format = "%m/%d/%Y %I:%M:%S %p"),
+         datetime = ifelse(format(datetime, "%H:%M:%S") == "00:00:00", 
+                           "24:00:00", format(datetime, "%H:%M:%S")))
+```
+
+This adds a column with 24 hour time, which we can use to analyze the data.
+
+We will group activity by datetime and summarize by intensity.
+
+```{r}
+Hintensities2 <- Hintensities %>%
+  mutate(datetime = as.POSIXct(ActivityHour, format = "%m/%d/%Y %I:%M:%S %p"),
+         datetime = ifelse(format(datetime, "%H:%M:%S") == "00:00:00", 
+                           "24:00:00", format(datetime, "%H:%M:%S"))) %>% 
+  group_by(datetime) %>%
+  summarise(Avg_intensity = mean(TotalIntensity))
+
+```
+
+Now we can graph the above to get a visual of peak useage times:
+
+```{r}
+ggplot(Hintensities2, aes(x=datetime, y=Avg_intensity))+
+  geom_col(fill="darkgreen")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+**Suggested use for this data:** We can see there are a few peak usage times for the average user- Bellabeat can start sending nudges to users during those times, but can also adjust based on individual users usage once we have that information.
+
+## Activity intensity by time and distance
+
+I would like to take a look at activity intensities with both distance and time, to see what conclusions we can draw:
+```{r}
+Dactivity<-rename(Dactivity, Date=ActivityDate)
+Dactivity$Date <- as.Date(Dactivity$Date, format = "%m/%d/%Y")
+```
+
+```{r}
+
+Intensity_distance<-Dactivity %>% 
+  group_by(Date) %>% 
+  summarise(avg_sedentary=round(mean(SedentaryActiveDistance), digits=2),
+            avg_light=round(mean(LightActiveDistance),digits=2),
+            avg_moderate=round(mean(ModeratelyActiveDistance),digits=2),
+            avg_veryactive=round(mean(VeryActiveDistance),digits=2))
+
+Intensity_time<-Dactivity %>% 
+  group_by(Date) %>% 
+  summarise(avg_t_sedentary=round(mean(SedentaryMinutes), digits=2),
+            avg_t_light=round(mean(LightlyActiveMinutes),digits=2),
+            avg_t_moderate=round(mean(FairlyActiveMinutes),digits=2),
+            avg_t_veryactive=round(mean(VeryActiveMinutes),digits=2)) 
+```
+I was having some trouble graphing the above and realized my dates were not in proper format. A quick correction:
+
+```{r}
+Intensity_distance$Date<-as.Date(Intensity_distance$Date, format="%m/%d/%y")
+Intensity_time$Date<-as.Date(Intensity_time$Date, format="%m/%d/%y")
+```
+
+Activity time is still in minutes, we may consider changing to hours for some visuals later.
+Lets see how intensity looks over time:
+
+```{r}
+ggplot(Intensity_time, aes(x=Date))+
+  geom_area (aes (y=avg_t_sedentary), fill="red", alpha = 0.5)+
+  geom_area (aes(y=avg_t_light),fill="orange",alpha=0.5)+
+  geom_area (aes(y=avg_t_moderate),fill="blue",alpha=0.5)+
+  geom_area (aes(y=avg_t_veryactive),fill="green",alpha=0.5)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+From this visual we can quickly see that most of our time is spent sedentary. Though that is not expected to change, I would like to consider subtracting sleep hours from sedentary hours to give us only waking activity. 
+
+Let's see what distance traveled based on intensity level can tell us:
+```{r}
+ggplot(Intensity_distance, aes(x=Date))+
+  geom_line (aes (y=avg_sedentary), color="red", alpha = 0.5, size=2)+
+  geom_line (aes(y=avg_light),color="orange",alpha=0.5, size=2)+
+  geom_line (aes(y=avg_moderate),color= "yellow",alpha=0.5, size=2)+
+  geom_line (aes(y=avg_veryactive),color="green",alpha=0.5, size=2)
+  scale_size_continuous(range = c(1, 100))
+```
+**Suggested use for this data:** We can see that people tend to cover more distance when very active compared to moderately active,but users still cover the most ground at a light level of activity! We can use this to encourage those users who aren't able to do more strenuous activities. We can also nudge users if they are spending more than the suggested time inactive, or nudge them to go a bit further on daily walks/runs ("You are 10 minutes away from beating your record! You can do it!")
+  
+## Weight
+I realized earlier in the Calories section that tracking calories wasn't a main goal of these apps. Next, I want to take a look at weight.
+One participant had only one weigh in, we can consider it an outlier and truncate it from the graph.
+We will need to format the date correctly, and make sure we are considering Id a factor so we can get multiple plot lines.
+```{r}
+weight$Date<-as.Date(weight$Date, format ="%m/%d/%y")
+weight$Id <- as.factor(weight$Id)
+
+```
+
+
+```{r}
+ggplot(weight, aes(x = Date, y = WeightPounds, color = Id)) +
+  geom_line() +
+  ylim(0,200)
+  labs(title = "Weight over Time",
+       x = "Date",
+       y = "Weight (Pounds)") +
+  theme_minimal()
+```
+**Suggested use for this data:** While tracking weight can be helpful if members are actively trying to lose weight, these customers do not seem to be losing weight and that may not be their focus.  Given that a minority of our data set had weigh ins, and none of those had significant weight loss, fitbits main users may not be trying to lose weight. 
+Bellabeat may want to cross reference with other platforms, or survey our own users to see how many have tried to lose weight in the last year or are likely to try in the next year. Because weight loss and calorie tracking are a significant portion of the fitness apps market, Bellabeat may want to consider including these features. It would even offer the potential tie in of a scale that automatically updates your weight through the app. 
+
+# Conclusion:
+
+
+In summation, Bellabeat and the Bellabeat app have the potential to grab a good segement of the market because we currently offer several things other fitness apps do not: Mindfullness activities, Menstrual cycle tracking, stress monitoring, and hydration monitoring. Bellabeat is primed to grab a top spot in market share if we can cover the bases other fitness apps do while offering things they do not yet offer.
+
+Bellabeat already tracks activity level and sleep, as do most other apps. We could have a more holistic approach by including steps, calories in and calories out.
+
+The website [Business of Apps](https://www.businessofapps.com/data/health-fitness-app-report/?utm_source=healthfitness&utm_medium=click&utm_campaign=featured-data-ad) states that health and fitness apps made over $4 billion in 2022, and when you include online classes, subscriptions, and hardware, the industry is over $26 billion in the same year. The highest percentage of market share went to Apple fitness and Leap, with around 25% each.
+
+With the rise of obesity, the [World Health Organization](https://www.frontiersin.org/journals/endocrinology/articles/10.3389/fendo.2020.00412/full) has recently given a shout out to the help that MobileHealth apps give the average consumer in monitoring their own health. 
+ 
+ Bellabeat should claim our portion of the market segment, but as a holistic business, I would like to offer a more holistic approach:
+
+According to a [study published oline,](https://www.garagegymreviews.com/best-health-apps) a selected group of experts rated 50 health apps, rating them in a dozen areas. They chose 7 winners in 7 different categories: Strength training, Weight loss, Mental Health, Meditation, Sleep, Hydration, and Running/Walking. There were no apps that won across two different categories.  
+
+While most apps are trying to corner a single market segment, Bellabeat can advertise to those who want to take control over multiple areas of their lives, and are tired of having to manage separate apps. Bellabeat could advertise to potential customers in a way that focuses on impowering across different areas of life: 
+
+"Take back control of your life: Why decide what to focus on when Bellabeat can help you focus on everything!"  
+
+"You're expected to do it all, so why shouldn't we?"
+
+"Weather your goal is to activate or meditate, Bellabeat is here to help!"
+
+
